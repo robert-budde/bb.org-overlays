@@ -14,7 +14,7 @@
 	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,beaglebone-green";
 
 	/* identification */
-	part-number = "BB-SPI1";
+	part-number = "cape-bone-reflow";
 	version = "00A0";
 
 	/* state the resources this cape uses */
@@ -25,6 +25,8 @@
 		"P9.30",	/* spi1_d1 */
 		"P9.28",	/* spi1_cs0 */
 		"P9.42",	/* spi1_cs1 */
+		"P9.25", /* OVEN DOOR	*/
+		"P9.22", /* Dallas 1W   */
 		/* the hardware ip uses */
 		"spi1";
 
@@ -39,6 +41,16 @@
 					0x198 0x13	/* mcasp0_axr0.spi1_d1, OUTPUT_PULLUP | MODE3 */
 					0x19c 0x13	/* mcasp0_ahclkr.spi1_cs0, OUTPUT_PULLUP | MODE3 */
 					0x164 0x12	/* eCAP0_in_PWM0_out.spi1_cs1 OUTPUT_PULLUP | MODE2 */
+				>;
+			};
+			oven_input_pins: pinmux_oven_input_pins{
+				pinctrl-single,pins = <
+					0x1AC 0x37 // P9_25 = Door open  = GPIO3_21
+				>;
+			};
+			dallas_w1_pins: pinmux_dallas_w1_pins {
+				pinctrl-single,pins = <
+					0x150 0x37	// Dallas 1W
 				>;
 			};
 		};
@@ -65,7 +77,6 @@
 				spi-cpha;
 			};
 
-
 			channel@1 {
 				#address-cells = <1>;
 				#size-cells = <0>;
@@ -74,6 +85,38 @@
 
 				reg = <1>;
 				spi-max-frequency = <16000000>;
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&ocp>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			gpio_keys {
+				compatible = "gpio-keys";
+				pinctrl-names = "default";
+				pinctrl-0 = <&oven_input_pins>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				switch_door {
+					label               = "door";
+					debounce_interval   = <50>;
+					linux,code          = <112>;
+					gpios               = <&gpio3 21 0x5>;
+					gpio-key,wakeup;
+				};
+			};
+
+			onewire {
+				compatible      = "w1-gpio";
+				pinctrl-names   = "default";
+				pinctrl-0       = <&dallas_w1_pins>;
+				status          = "okay";
+				gpios           = <&gpio0 2 0>;
 			};
 		};
 	};
